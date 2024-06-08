@@ -1,12 +1,11 @@
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const axios = require('axios');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
-
-require('dotenv').config();
-
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -34,12 +33,10 @@ const decodeToken = (token) => {
     }
 };
 
-
-
-const API_KEY = 'cc28fc43';
+const API_KEY = process.env.OMDB_API_KEY;
 const BASE_URL = 'http://www.omdbapi.com/';
-
-const MONGO_URI = 'mongodb+srv://akksharass:dbUserPassword@cluster0.z3qrcab.mongodb.net/mydatabase?retryWrites=true';
+const MONGO_URI = process.env.MONGO_URI;
+const JWT_SECRET = process.env.JWT_SECRET;
 
 console.log('Mongo URI: ', MONGO_URI);
 
@@ -53,13 +50,12 @@ mongoose.connect(MONGO_URI, {
   useUnifiedTopology: true
 }).then(() => console.log('MongoDB connected...'))
     .catch(err => console.error('MongoDB connection error:', err));
-  
+
 // Enable CORS and parse json body
 app.use(cors());
 app.use(express.json());
 
-
-//defining schema
+// Define schema and model
 const userSchema = new mongoose.Schema({
     username: String,
     email: String,
@@ -71,23 +67,8 @@ const favSchema = new mongoose.Schema({
     movie: String
 });
 
-//model creation
 const User = mongoose.model('users', userSchema);
 const Fav = mongoose.model('favs', favSchema);
-
-
-// const authenticateToken = (req, res, next) => {
-//     const authHeader = req.headers['authorization'];
-//     const token = authHeader && authHeader.split(' ')[1];
-//     if (!token) return res.sendStatus(401);
-
-//     jwt.verify(token, 'secret_key', (err, user) => {
-//         if (err) return res.sendStatus(403);
-//         req.user = user;
-//         next();
-//     });
-// };
-
 
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
@@ -97,7 +78,7 @@ const authenticateToken = (req, res, next) => {
         return res.status(401).json({ error: 'No token provided' });
     }
 
-    jwt.verify(token, 'secret_key', (err, user) => {
+    jwt.verify(token, JWT_SECRET, (err, user) => {
         if (err) {
             if (err.name === 'TokenExpiredError') {
                 return res.status(401).json({ error: 'Token expired' });
@@ -110,6 +91,11 @@ const authenticateToken = (req, res, next) => {
         next();
     });
 };
+
+// Root route
+app.get('/', (req, res) => {
+    res.send('Welcome to the CineSearch Backend API');
+});
 
 // Sign-in route
 app.post('/api/signin', async (req, res) => {
@@ -128,7 +114,7 @@ app.post('/api/signin', async (req, res) => {
             return res.status(401).json({ error: 'Invalid email or password' });
         }
 
-        const token = jwt.sign({ email: user.email, id: user._id }, 'secret_key');
+        const token = jwt.sign({ email: user.email, id: user._id }, JWT_SECRET);
         console.log(token);
         res.json({ token });
     } catch (error) {
@@ -136,8 +122,6 @@ app.post('/api/signin', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-
-
 
 // Sign-up route
 app.post('/api/signup', async (req, res) => {
@@ -159,35 +143,7 @@ app.post('/api/signup', async (req, res) => {
     }
 });
 
-
-
 // Add to favorite
-// app.post('/api/favorite', authenticateToken, async (req, res) => {
-//     console.log(req.body);
-//     const token = req.headers.authorization;
-//     try {
-//         const varToken = decodeToken(token);
-
-//         const email = varToken['email'];
-//         const movie = JSON.stringify(req.body);
-
-//         console.log(movie);
-
-//         const newFav = new Fav({ email, movie });
-
-//         await newFav.save();
-
-//         console.log("Data saved");
-
-//         res.status(200).json(movie);
-//     } catch (error) {
-//         console.log(error);
-//         res.status(500).json({ error: error.message });
-//     }
-// });
-
-
-
 app.post('/api/favorite', authenticateToken, async (req, res) => {
     console.log(req.body);
     try {
@@ -205,27 +161,6 @@ app.post('/api/favorite', authenticateToken, async (req, res) => {
     }
 });
 
-
-// Get favorite
-// app.get('/api/favorite', authenticateToken, async (req, res) => {
-//     const token = req.headers.authorization;
-//     try {
-//         const varToken = decodeToken(token);
-
-//         const email = varToken['email'];
-        
-//         const fav = await Fav.find({ email: email });
-
-//         console.log("Data saved");
-//         res.json(favorites);
-//       //  res.status(200).json(fav);
-//     } catch (error) {
-//         console.log(error);
-//         res.status(500).json({ error: error.message });
-//     }
-// });
-
-
 // Get favorite
 app.get('/api/favorite', authenticateToken, async (req, res) => {
     try {
@@ -237,7 +172,6 @@ app.get('/api/favorite', authenticateToken, async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-
 
 // Movie Search Route
 app.get('/api/search', authenticateToken, async (req, res) => {
