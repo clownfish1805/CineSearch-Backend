@@ -5,8 +5,11 @@ const axios = require('axios');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 
+require('dotenv').config();
+
+
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 // Middleware for handling CORS and preflight requests
 app.use(function(req, res, next) {
