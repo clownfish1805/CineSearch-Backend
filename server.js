@@ -24,6 +24,7 @@ app.use(function(req, res, next) {
     next();
 });
 
+// Middleware for parsing JSON and URL-encoded bodies
 const decodeToken = (token) => {
     try {
         return jwt.decode(token);
@@ -32,6 +33,8 @@ const decodeToken = (token) => {
         return null;
     }
 };
+
+
 
 const API_KEY = process.env.OMDB_API_KEY;
 const BASE_URL = 'http://www.omdbapi.com/';
@@ -45,15 +48,18 @@ if (!MONGO_URI) {
     process.exit(1);
 }
 
+
 mongoose.connect(MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 }).then(() => console.log('MongoDB connected...'))
     .catch(err => console.error('MongoDB connection error:', err));
 
+
 // Enable CORS and parse json body
 app.use(cors());
 app.use(express.json());
+
 
 // Define schema and model
 const userSchema = new mongoose.Schema({
@@ -69,6 +75,8 @@ const favSchema = new mongoose.Schema({
 
 const User = mongoose.model('users', userSchema);
 const Fav = mongoose.model('favs', favSchema);
+
+
 
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
@@ -92,10 +100,13 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
+
 // Root route
 app.get('/', (req, res) => {
     res.send('Welcome to the CineSearch Backend API');
 });
+
+
 
 // Sign-in route
 app.post('/api/signin', async (req, res) => {
@@ -123,6 +134,8 @@ app.post('/api/signin', async (req, res) => {
     }
 });
 
+
+
 // Sign-up route
 app.post('/api/signup', async (req, res) => {
     const { username, email, password } = req.body;
@@ -143,7 +156,9 @@ app.post('/api/signup', async (req, res) => {
     }
 });
 
-// Add to favorite
+
+
+// Add to favorite route
 app.post('/api/favorite', authenticateToken, async (req, res) => {
     console.log(req.body);
     try {
@@ -161,7 +176,9 @@ app.post('/api/favorite', authenticateToken, async (req, res) => {
     }
 });
 
-// Get favorite
+
+
+// Get favorites route
 app.get('/api/favorite', authenticateToken, async (req, res) => {
     try {
         const email = req.user.email;
@@ -172,6 +189,8 @@ app.get('/api/favorite', authenticateToken, async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+
 
 // Movie Search Route
 app.get('/api/search', authenticateToken, async (req, res) => {
@@ -196,6 +215,8 @@ app.get('/api/search', authenticateToken, async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
