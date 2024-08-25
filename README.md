@@ -2,7 +2,7 @@
 
 ## Deployed link
 
-https://master--cinesearch-frontend.netlify.app/
+https://master--cinesearch-frontend.netlify.app/ <br>
 https://cinesearch-backend.onrender.com/
 
 ## Overview
